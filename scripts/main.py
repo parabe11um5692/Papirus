@@ -1,21 +1,28 @@
 import flet as ft
 import connection as con
 import book_settings as bs
-
+import user_cabinet as uc
+from config import user_login_value
 con.connection_reg() #подключение к базе данных
 
+user_login_value = 'имя'
 def main(page: ft.Page):
     """Основная настройка страницы"""
+    global user_login_value
+
     page.title = 'Папирус'
     page.theme_mode = 'dark'
     page.vertical_alignment = ft.MainAxisAlignment.CENTER
     page.window.width = 600
     page.window.height = 900
+    page.window.resizable = False   
 
     logged_in = False #переменная-заглушка, меняется при авторизации пользователя и позволяет посмотреть личный кабинет
-
+    
     def register(e):
         """Функция для регистрации нового пользователя"""
+
+        global user_login_value
         with con.connection_to_data_base_reg.cursor() as cursor:
             query = f"""
             INSERT INTO `reg`(user_name, user_pass) VALUES('{user_login.value}', '{user_password.value}')"""
@@ -24,13 +31,17 @@ def main(page: ft.Page):
                 con.connection_to_data_base_reg.commit()
                 page.open(ft.SnackBar(ft.Text(f'Приятно познакомиться,{user_login.value}')))
                 user_password.value = ''
+                user_login_value = user_login.value
+                print(user_login_value)
+
             except Exception as ex:
                 page.open(ft.SnackBar(ft.Text('Имя занято')))
                 print('Ошибка', ex)
             page.update()
-        
+            
     def auth(e):
         """Функция для авторизации пользователя"""
+        global user_login_value
         with con.connection_to_data_base_reg.cursor() as cursor:
             query = """
             SELECT * FROM reg WHERE user_name = %s AND user_pass = %s
@@ -40,6 +51,8 @@ def main(page: ft.Page):
                 result = cursor.fetchone() 
                 if result: 
                     user_password.value = ''
+                    user_login_value = user_login.value
+                    print(user_login_value)
                     nonlocal logged_in
                     logged_in = True
                     
@@ -87,8 +100,7 @@ def main(page: ft.Page):
     pass_lock = ft.IconButton(icon=ft.icons.LOCK, on_click= change_pass)
     user_password = ft.TextField(label='Ваш пароль', width= 200, on_change= valid, password=True, suffix_icon=pass_lock)
     registr_btn = ft.OutlinedButton(text='Начать', width=200, on_click= register, disabled=True)
-    auth_btn = ft.OutlinedButton(text='Начать', width=200, on_click= auth, disabled=True)
-    
+    auth_btn = ft.OutlinedButton(text='Начать', width=200, on_click= auth, disabled=True)    
     registration = ft.Row(
             [
                 ft.Column(
@@ -190,7 +202,7 @@ def main(page: ft.Page):
     navigate_for_my_books = ft.Container(
         content=ft.Row(
             controls=[
-                ft.IconButton(ft.icons.COLLECTIONS_BOOKMARK, icon_color='#e85a4f', on_click=open_all_books,),
+                ft.IconButton(ft.icons.COLLECTIONS_BOOKMARK, icon_color='#e85a4f', on_click=open_all_books),
                 ft.IconButton(ft.icons.EXPLORE, icon_color='white', on_click=open_all_foreign_books),
                 ft.IconButton(ft.icons.PALETTE, icon_color='#e85a4f', on_click=open_all_art_books),
                 ft.IconButton(ft.icons.MAP, icon_color='#e9eeca', on_click=open_all_adventure_books),
@@ -204,14 +216,9 @@ def main(page: ft.Page):
     )
     
     cabinet = ft.Row(
-            [
-                ft.Column(
-                    [
-                        ft.Text('Здесь будет ваш личный кабинет')
-                    ]
-                )
-            ],
-            alignment=ft.MainAxisAlignment.CENTER,
+            [   
+                uc.main_user_profile()
+            ]   
         )
     search = ft.Row(
             [
