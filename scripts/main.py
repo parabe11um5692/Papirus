@@ -2,14 +2,11 @@ import flet as ft
 import connection as con
 import book_settings as bs
 import user_cabinet as uc
-from config import user_login_value
 con.connection_reg() #подключение к базе данных
 
-user_login_value = 'имя'
+
 def main(page: ft.Page):
     """Основная настройка страницы"""
-    global user_login_value
-
     page.title = 'Папирус'
     page.theme_mode = 'dark'
     page.vertical_alignment = ft.MainAxisAlignment.CENTER
@@ -21,18 +18,14 @@ def main(page: ft.Page):
     
     def register(e):
         """Функция для регистрации нового пользователя"""
-
-        global user_login_value
         with con.connection_to_data_base_reg.cursor() as cursor:
-            query = f"""
+            main_query = f"""
             INSERT INTO `reg`(user_name, user_pass) VALUES('{user_login.value}', '{user_password.value}')"""
             try:
-                cursor.execute(query)
+                cursor.execute(main_query)
                 con.connection_to_data_base_reg.commit()
                 page.open(ft.SnackBar(ft.Text(f'Приятно познакомиться,{user_login.value}')))
                 user_password.value = ''
-                user_login_value = user_login.value
-                print(user_login_value)
 
             except Exception as ex:
                 page.open(ft.SnackBar(ft.Text('Имя занято')))
@@ -41,21 +34,18 @@ def main(page: ft.Page):
             
     def auth(e):
         """Функция для авторизации пользователя"""
-        global user_login_value
         with con.connection_to_data_base_reg.cursor() as cursor:
-            query = """
+            main_query = """
             SELECT * FROM reg WHERE user_name = %s AND user_pass = %s
             """
             try:
-                cursor.execute(query, (user_login.value, user_password.value))
+                cursor.execute(main_query, (user_login.value, user_password.value))
                 result = cursor.fetchone() 
                 if result: 
                     user_password.value = ''
-                    user_login_value = user_login.value
-                    print(user_login_value)
                     nonlocal logged_in
                     logged_in = True
-                    
+
                     navigate(None)
                     page.navigation_bar.destinations.pop(0)
                     page.navigation_bar.destinations.pop(0)
@@ -68,7 +58,7 @@ def main(page: ft.Page):
                             ft.NavigationBarDestination(icon=ft.icons.MY_LIBRARY_BOOKS, label="Моя подборка")
                         ],
                         on_change=navigate_for_cabinet)
-                    page.add(second_nav)                           
+                    page.add(second_nav)                    
                 else: 
                     page.open(ft.SnackBar(ft.Text('Неверные данные')))
                 page.update()
@@ -217,7 +207,23 @@ def main(page: ft.Page):
     
     cabinet = ft.Row(
             [   
-                uc.main_user_profile()
+                ft.Container(
+                          content= ft.Column(
+                                controls=[
+                                      ft.TextButton('Все книги', on_click= open_all_books),
+                                      ft.TextButton('Авторы'),
+                                      ft.TextButton('Рецензии'),
+                                      ft.TextButton('Мои полки'),
+                                      ft.TextButton('Книги по жанрам'),
+                                ]
+                          ),
+                          padding=ft.Padding(50,350,0,0)
+                    ),
+                ft.Container(
+                    content = uc.main_user_profile(),
+                    padding= ft.Padding(-200,-150,0,0)
+                )
+                
             ]   
         )
     search = ft.Row(
@@ -289,7 +295,7 @@ def main(page: ft.Page):
         on_change=navigate
     )
    
-    page.add(registration)
+    page.add(cabinet)
 
 ft.app(target=main)
 con.connection_reg.close()

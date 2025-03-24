@@ -1,1 +1,1 @@
-user_login_value = 'None'
+user_login_value = None
